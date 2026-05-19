@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>旅行ルートメーカー</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink:       #1a1a2e;
+      --surface:   #f4f1eb;
+      --card:      #ffffff;
+      --accent:    #c0392b;
+      --accent2:   #2c3e7a;
+      --muted:     #8a8880;
+      --border:    #ddd8ce;
+      --travel:    #e8f4fd;
+      --travel-b:  #2c3e7a;
+      --stay:      #fdf3e8;
+      --stay-b:    #c0392b;
+      --buf:       #f0f7ee;
+      --buf-b:     #27ae60;
+      --start:     #2c3e7a;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Zen Kaku Gothic New', sans-serif;
+      background: var(--surface);
+      color: var(--ink);
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--ink);
+      color: #fff;
+      padding: 18px 32px;
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+    }
+    header h1 {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: .06em;
+    }
+    header span {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      color: #888;
+      letter-spacing: .12em;
+    }
+
+    /* ── Layout ── */
+    .layout {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      height: calc(100vh - 58px);
+    }
+
+    /* ── Panel left ── */
+    .panel-left {
+      background: var(--card);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .section {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+    }
+    .section:last-child { border-bottom: none; }
+
+    .section-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .14em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    .field { margin-bottom: 12px; }
+    .field:last-child { margin-bottom: 0; }
+    .field label {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+    .field input {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 14px;
+      background: #fafaf8;
+      color: var(--ink);
+      transition: border-color .2s;
+    }
+    .field input:focus {
+      outline: none;
+      border-color: var(--accent2);
+      background: #fff;
+    }
+
+    /* 時刻を横並び */
+    .time-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    /* ── 目的地リスト ── */
+    #dest-list { display: flex; flex-direction: column; gap: 10px; }
+
+    .dest-card {
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      background: #fafaf8;
+      overflow: hidden;
+    }
+    .dest-card-inner {
+      padding: 10px 12px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .dest-num {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--muted);
+      padding-top: 10px;
+      min-width: 20px;
+    }
+    .dest-fields { flex: 1; display: flex; flex-direction: column; gap: 7px; }
+    .dest-fields input {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1.5px solid var(--border);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 13px;
+      background: #fff;
+      color: var(--ink);
+      transition: border-color .2s;
+    }
+    .dest-fields input:focus {
+      outline: none;
+      border-color: var(--accent2);
+    }
+    .dest-dur-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .dest-dur-row input {
+      width: 90px;
+    }
+    .dest-dur-row span {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .btn-remove {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 18px;
+      padding: 6px;
+      border-radius: 3px;
+      transition: color .2s, background .2s;
+      line-height: 1;
+    }
+    .btn-remove:hover { color: var(--accent); background: #fff0f0; }
+
+    .btn-add-dest {
+      width: 100%;
+      padding: 9px;
+      border: 1.5px dashed var(--border);
+      border-radius: 6px;
+      background: transparent;
+      font-family: inherit;
+      font-size: 13px;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all .2s;
+      margin-top: 4px;
+    }
+    .btn-add-dest:hover {
+      border-color: var(--accent2);
+      color: var(--accent2);
+      background: #f0f3fd;
+    }
+
+    /* ── Calculate ── */
+    .btn-calc {
+      width: 100%;
+      padding: 14px;
+      background: var(--ink);
+      color: #fff;
+      border: none;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: .06em;
+      cursor: pointer;
+      transition: background .2s;
+    }
+    .btn-calc:hover { background: #2c2c44; }
+    .btn-calc:disabled { background: #aaa; cursor: not-allowed; }
+
+    /* ── Alert ── */
+    .alert {
+      margin: 0 24px 16px;
+      padding: 11px 14px;
+      border-radius: 4px;
+      font-size: 13px;
+      display: none;
+      line-height: 1.5;
+    }
+    .alert.error { background: #fdecea; color: #c0392b; border-left: 3px solid #c0392b; }
+    .alert.success { background: #eafaf1; color: #1e8449; border-left: 3px solid #1e8449; }
+
+    /* ── Panel right ── */
+    .panel-right {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #map {
+      flex: 1;
+      min-height: 0;
+    }
+
+    /* ── Timeline ── */
+    #timeline {
+      height: 280px;
+      overflow-y: auto;
+      background: var(--card);
+      border-top: 1px solid var(--border);
+      padding: 16px 20px;
+    }
+
+    .tl-header {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .14em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .tl-copy {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--accent2);
+      cursor: pointer;
+      background: none;
+      border: 1px solid var(--accent2);
+      padding: 3px 8px;
+      border-radius: 3px;
+      font-family: inherit;
+      letter-spacing: .04em;
+      transition: all .2s;
+    }
+    .tl-copy:hover { background: var(--accent2); color: #fff; }
+
+    .tl-items { display: flex; gap: 0; flex-direction: column; }
+
+    .tl-row {
+      display: flex;
+      align-items: stretch;
+      position: relative;
+    }
+    .tl-line {
+      width: 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .tl-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--muted);
+      margin-top: 14px;
+      flex-shrink: 0;
+      z-index: 1;
+    }
+    .tl-connector {
+      width: 2px;
+      flex: 1;
+      background: var(--border);
+      margin: 0 auto;
+    }
+    .tl-content {
+      flex: 1;
+      padding: 8px 0 8px 10px;
+    }
+    .tl-time {
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--ink);
+    }
+    .tl-place {
+      font-size: 13px;
+      font-weight: 700;
+      margin: 1px 0;
+    }
+    .tl-detail {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    /* タイプ別の色 */
+    .tl-row.type-start    .tl-dot { background: var(--start); width: 14px; height: 14px; margin-top: 12px; }
+    .tl-row.type-end      .tl-dot { background: var(--start); width: 14px; height: 14px; margin-top: 12px; }
+    .tl-row.type-travel   .tl-dot { background: var(--travel-b); }
+    .tl-row.type-stay     .tl-dot { background: var(--accent); }
+    .tl-row.type-buf-pre  .tl-dot { background: var(--buf-b); }
+    .tl-row.type-buf-post .tl-dot { background: var(--buf-b); }
+    .tl-row.type-travel   .tl-place { color: var(--travel-b); }
+    .tl-row.type-stay     .tl-place { color: var(--accent); }
+
+    /* empty state */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--muted);
+      gap: 8px;
+    }
+    .empty-state .icon { font-size: 32px; }
+    .empty-state p { font-size: 13px; }
+
+    .loading-overlay {
+      display: none;
+      position: absolute;
+      inset: 0;
+      background: rgba(244,241,235,.85);
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 12px;
+      z-index: 10;
+      font-size: 14px;
+      color: var(--ink);
+    }
+    .loading-overlay.active { display: flex; }
+    .spinner {
+      width: 32px; height: 32px;
+      border: 3px solid var(--border);
+      border-top-color: var(--ink);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; grid-template-rows: auto 1fr; height: auto; }
+      .panel-left { max-height: 60vh; }
+      #map { height: 300px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🗺 旅行ルートメーカー</h1>
+  <span>POWERED BY GOOGLE ROUTES API</span>
+</header>
+
+<div class="layout">
+
+  <!-- ─── 左パネル ─── -->
+  <div class="panel-left" id="panel-left">
+
+    <!-- APIキー -->
+    <div class="section">
+      <div class="section-label">Google Maps API キー</div>
+      <div class="field">
+        <input type="password" id="api-key" placeholder="AIza...">
+      </div>
+    </div>
+
+    <!-- 基本設定 -->
+    <div class="section">
+      <div class="section-label">基本設定</div>
+      <div class="field">
+        <label>出発・帰着地点</label>
+        <input type="text" id="start-loc" placeholder="例：JR東京駅 丸の内南口">
+      </div>
+      <div class="time-row">
+        <div class="field">
+          <label>開始時刻</label>
+          <input type="time" id="start-time" value="09:00">
+        </div>
+        <div class="field">
+          <label>終了時刻</label>
+          <input type="time" id="end-time" value="18:00">
+        </div>
+      </div>
+    </div>
+
+    <!-- 目的地 -->
+    <div class="section" style="flex:1;">
+      <div class="section-label">目的地リスト（順不同）</div>
+      <div id="dest-list"></div>
+      <button class="btn-add-dest" onclick="addDest()">＋ 目的地を追加</button>
+    </div>
+
+    <div class="alert" id="alert"></div>
+
+    <button class="btn-calc" id="btn-calc" onclick="runCalc()">
+      ルートを計算する
+    </button>
+  </div>
+
+  <!-- ─── 右パネル ─── -->
+  <div class="panel-right" style="position:relative;">
+
+    <!-- ローディング -->
+    <div class="loading-overlay" id="loading">
+      <div class="spinner"></div>
+      <span id="loading-msg">ルートを計算中...</span>
+    </div>
+
+    <!-- 地図 -->
+    <div id="map">
+      <div class="empty-state" id="map-empty">
+        <span class="icon">🗺</span>
+        <p>ルートを計算すると地図が表示されます</p>
+      </div>
+    </div>
+
+    <!-- タイムライン -->
+    <div id="timeline">
+      <div class="empty-state" style="height:200px;">
+        <span class="icon">📋</span>
+        <p>タイムスケジュールがここに表示されます</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ──────────────────────────────
+//  定数
+// ──────────────────────────────
+const ROUTES_API = 'https://routes.googleapis.com';
+const BUF_PRE  = 15; // 移動前バッファ（分）
+const BUF_POST = 15; // 移動後バッファ（分）
+
+let destCount = 0;
+let googleMapsLoaded = false;
+let map = null;
+let markers = [];
+let polylines = [];
+
+// ──────────────────────────────
+//  初期化
+// ──────────────────────────────
+window.onload = () => {
+  addDest();
+  addDest();
+  addDest();
+};
+
+// ──────────────────────────────
+//  目的地カードの追加 / 削除
+// ──────────────────────────────
+function addDest() {
+  const id = ++destCount;
+  const list = document.getElementById('dest-list');
+  const card = document.createElement('div');
+  card.className = 'dest-card';
+  card.id = `dest-${id}`;
+  card.innerHTML = `
+    <div class="dest-card-inner">
+      <span class="dest-num">${list.children.length + 1}</span>
+      <div class="dest-fields">
+        <input type="text" placeholder="目的地名・住所" id="dn-${id}">
+        <div class="dest-dur-row">
+          <input type="number" min="0" value="60" id="dd-${id}">
+          <span>分 滞在</span>
+        </div>
+      </div>
+      <button class="btn-remove" onclick="removeDest(${id})" title="削除">×</button>
+    </div>
+  `;
+  list.appendChild(card);
+  renumberDests();
+}
+
+function removeDest(id) {
+  const el = document.getElementById(`dest-${id}`);
+  if (el) { el.remove(); renumberDests(); }
+}
+
+function renumberDests() {
+  document.querySelectorAll('.dest-num').forEach((el, i) => {
+    el.textContent = i + 1;
+  });
+}
+
+function getDests() {
+  const results = [];
+  document.querySelectorAll('.dest-card').forEach(card => {
+    const id = card.id.replace('dest-', '');
+    const name = document.getElementById(`dn-${id}`)?.value.trim();
+    const dur  = parseInt(document.getElementById(`dd-${id}`)?.value) || 0;
+    if (name) results.push({ name, dur });
+  });
+  return results;
+}
+
+// ──────────────────────────────
+//  メッセージ表示
+// ──────────────────────────────
+function showAlert(msg, type = 'error') {
+  const el = document.getElementById('alert');
+  el.textContent = msg;
+  el.className = `alert ${type}`;
+  el.style.display = 'block';
+  el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+function clearAlert() {
+  document.getElementById('alert').style.display = 'none';
+}
+
+// ──────────────────────────────
+//  ローディング表示
+// ──────────────────────────────
+function setLoading(active, msg = '') {
+  const ov = document.getElementById('loading');
+  if (active) {
+    document.getElementById('loading-msg').textContent = msg;
+    ov.classList.add('active');
+    document.getElementById('btn-calc').disabled = true;
+  } else {
+    ov.classList.remove('active');
+    document.getElementById('btn-calc').disabled = false;
+  }
+}
+
+// ──────────────────────────────
+//  Google Maps 初期化（動的ロード）
+// ──────────────────────────────
+function loadMapsScript(apiKey) {
+  return new Promise((resolve, reject) => {
+    if (googleMapsLoaded && window.google?.maps) { resolve(); return; }
+    const s = document.createElement('script');
+    s.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=geometry&language=ja`;
+    s.async = true;
+    s.onload = () => { googleMapsLoaded = true; resolve(); };
+    s.onerror = () => reject(new Error('Maps JavaScript API の読み込みに失敗しました。APIキーを確認してください。'));
+    document.head.appendChild(s);
+  });
+}
+
+function initMap(center) {
+  const mapDiv = document.getElementById('map');
+  document.getElementById('map-empty')?.remove();
+  map = new google.maps.Map(mapDiv, {
+    zoom: 13,
+    center,
+    mapTypeControl: false,
+    streetViewControl: false,
+    fullscreenControl: true,
+  });
+}
+
+// ──────────────────────────────
+//  Routes API: Compute Route Matrix
+//  ★ routingPreference 未設定 = Essentials SKU（無料枠対象）
+// ──────────────────────────────
+async function getRouteMatrix(origins, destinations, apiKey) {
+  const body = {
+    origins:      origins.map(address => ({ waypoint: { address } })),
+    destinations: destinations.map(address => ({ waypoint: { address } })),
+    travelMode: 'DRIVE'
+    // routingPreference は指定しない → Essentials SKU維持
+  };
+
+  const res = await fetch(`${ROUTES_API}/distanceMatrix/v2:computeRouteMatrix`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Goog-Api-Key': apiKey,
+      // 必要最小フィールドのみ → Essentials SKU維持
+      'X-Goog-FieldMask': 'originIndex,destinationIndex,duration,distanceMeters,status'
+    },
+    body: JSON.stringify(body)
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `Route Matrix API エラー (${res.status})`);
+  }
+
+  const data = await res.json();
+  // data は配列: [ { originIndex, destinationIndex, duration:"Xs", distanceMeters } ]
+  return data;
+}
+
+// ──────────────────────────────
+//  Routes API: Compute Routes（ポリライン取得用）
+//  ★ routingPreference 未設定 = Essentials SKU
+// ──────────────────────────────
+async function computeRoutes(origin, destination, waypoints, apiKey) {
+  const body = {
+    origin:      { address: origin },
+    destination: { address: destination },
+    travelMode: 'DRIVE'
+    // routingPreference 未設定 → Essentials SKU維持
+  };
+  if (waypoints.length > 0) {
+    body.intermediates = waypoints.map(w => ({ address: w }));
+  }
+
+  const res = await fetch(`${ROUTES_API}/directions/v2:computeRoutes`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Goog-Api-Key': apiKey,
+      'X-Goog-FieldMask': 'routes.polyline,routes.legs.startLocation'
+    },
+    body: JSON.stringify(body)
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `Compute Routes エラー (${res.status})`);
+  }
+  return res.json();
+}
+
+// ──────────────────────────────
+//  時刻ユーティリティ
+// ──────────────────────────────
+function timeToMin(hhmm) {
+  const [h, m] = hhmm.split(':').map(Number);
+  return h * 60 + m;
+}
+function minToHHMM(min) {
+  const h = Math.floor(min / 60) % 24;
+  const m = min % 60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+}
+function parseDurationSec(durationStr) {
+  // "1234s" → 1234
+  return parseInt(durationStr.replace('s',''), 10);
+}
+
+// ──────────────────────────────
+//  最近隣法でルート構築
+// ──────────────────────────────
+async function buildRoute(startLoc, dests, startTimeStr, endTimeStr, apiKey) {
+  const timeline = [];
+  const visited  = new Array(dests.length).fill(false);
+  const orderedDests = []; // 確定した訪問順
+
+  let curLoc  = startLoc;
+  let curMin  = timeToMin(startTimeStr);
+  const endMin = timeToMin(endTimeStr);
+
+  timeline.push({
+    type: 'start', time: minToHHMM(curMin),
+    place: curLoc, detail: '出発地点'
+  });
+
+  for (let step = 0; step < dests.length; step++) {
+    setLoading(true, `目的地 ${step + 1}/${dests.length} のルートを計算中...`);
+
+    // 未訪問目的地との距離行列を取得
+    const unvisitedIdxs = dests.map((_,i) => i).filter(i => !visited[i]);
+    const unvisitedAddrs = unvisitedIdxs.map(i => dests[i].name);
+
+    const matrix = await getRouteMatrix([curLoc], unvisitedAddrs, apiKey);
+
+    // 最短移動時間の目的地を選択
+    let bestSec = Infinity;
+    let bestUnvisitedPos = 0; // unvisitedIdxsの何番目か
+    for (const row of matrix) {
+      if (row.status && row.status.code) continue; // エラー行スキップ
+      const sec = parseDurationSec(row.duration || '0s');
+      if (sec < bestSec) {
+        bestSec = sec;
+        bestUnvisitedPos = row.destinationIndex;
+      }
+    }
+
+    const travelMin = Math.ceil(bestSec / 60);
+    const destIdx   = unvisitedIdxs[bestUnvisitedPos];
+    const dest      = dests[destIdx];
+
+    // ─ 移動前バッファ ─
+    curMin += BUF_PRE;
+    timeline.push({
+      type: 'buf-pre', time: minToHHMM(curMin),
+      place: curLoc, detail: `出発準備 / お手洗い（${BUF_PRE}分）`
+    });
+
+    // ─ 移動 ─
+    curMin += travelMin;
+    timeline.push({
+      type: 'travel', time: minToHHMM(curMin),
+      place: `→ ${dest.name}`, detail: `移動時間: 約${travelMin}分`
+    });
+
+    // ─ 到着後バッファ ─
+    curMin += BUF_POST;
+    timeline.push({
+      type: 'buf-post', time: minToHHMM(curMin),
+      place: dest.name, detail: `駐車場 / 徒歩（${BUF_POST}分）`
+    });
+
+    // ─ 滞在終了時刻をチェック ─
+    const stayEndMin = curMin + dest.dur;
+    if (stayEndMin > endMin) {
+      throw new Error(
+        `「${dest.name}」での滞在後、終了時刻 ${endTimeStr} を超過します。\n` +
+        `目的地が多すぎるか、滞在時間が長すぎます。`
+      );
+    }
+
+    // ─ 滞在 ─
+    curMin = stayEndMin;
+    timeline.push({
+      type: 'stay', time: minToHHMM(curMin),
+      place: dest.name, detail: `滞在: ${dest.dur}分`
+    });
+
+    visited[destIdx] = true;
+    orderedDests.push(dest.name);
+    curLoc = dest.name;
+  }
+
+  // ── 帰路 ──
+  setLoading(true, '帰路を計算中...');
+  const retMatrix = await getRouteMatrix([curLoc], [startLoc], apiKey);
+  const retRow    = retMatrix[0];
+  const retSec    = parseDurationSec(retRow?.duration || '0s');
+  const retMin    = Math.ceil(retSec / 60);
+
+  // 帰路：移動前バッファ
+  curMin += BUF_PRE;
+  timeline.push({
+    type: 'buf-pre', time: minToHHMM(curMin),
+    place: curLoc, detail: `出発準備 / お手洗い（${BUF_PRE}分）`
+  });
+
+  // 帰路：移動
+  curMin += retMin;
+  timeline.push({
+    type: 'travel', time: minToHHMM(curMin),
+    place: `→ ${startLoc}（帰路）`, detail: `移動時間: 約${retMin}分`
+  });
+
+  // 帰路：到着後バッファ
+  curMin += BUF_POST;
+
+  if (curMin > endMin) {
+    throw new Error(
+      `帰路を含めると終了時刻 ${endTimeStr} を超過します。\n` +
+      `実際の到着予想: ${minToHHMM(curMin)}`
+    );
+  }
+
+  timeline.push({
+    type: 'end', time: minToHHMM(curMin),
+    place: startLoc,
+    detail: `帰着（終了予定まで余裕: ${endMin - curMin}分）`
+  });
+
+  return { timeline, orderedDests };
+}
+
+// ──────────────────────────────
+//  地図にルートを描画
+// ──────────────────────────────
+async function drawRoute(startLoc, orderedDests, apiKey) {
+  // 既存を削除
+  markers.forEach(m => m.setMap(null));
+  polylines.forEach(p => p.setMap(null));
+  markers = []; polylines = [];
+
+  const allAddresses = [startLoc, ...orderedDests, startLoc];
+
+  setLoading(true, 'ルートを地図に描画中...');
+
+  const routeData = await computeRoutes(
+    startLoc, startLoc,
+    orderedDests, // 中間地点
+    apiKey
+  );
+
+  if (!routeData.routes || routeData.routes.length === 0) return;
+
+  const route = routeData.routes[0];
+  const polyline = route.polyline?.encodedPolyline;
+
+  if (polyline && window.google?.maps?.geometry) {
+    const path = google.maps.geometry.encoding.decodePath(polyline);
+    const pl = new google.maps.Polyline({
+      path, geodesic: true,
+      strokeColor: '#2c3e7a', strokeOpacity: .85, strokeWeight: 5,
+      map
+    });
+    polylines.push(pl);
+
+    // 地図をルートに合わせる
+    const bounds = new google.maps.LatLngBounds();
+    path.forEach(p => bounds.extend(p));
+    map.fitBounds(bounds, { padding: 60 });
+  }
+
+  // マーカーを脚の開始位置に配置
+  const legs = route.legs || [];
+  const labels = ['出発', ...orderedDests.map((_,i) => `${i+1}`), 'G'];
+  const colors = ['#2c3e7a', ...orderedDests.map(() => '#c0392b'), '#2c3e7a'];
+
+  legs.forEach((leg, i) => {
+    const pos = leg.startLocation?.latLng;
+    if (!pos) return;
+    const marker = new google.maps.Marker({
+      position: { lat: pos.latitude, lng: pos.longitude },
+      map,
+      label: {
+        text: labels[i] || `${i}`,
+        color: '#fff', fontWeight: 'bold', fontSize: '12px'
+      },
+      icon: {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: 16,
+        fillColor: colors[i] || '#888',
+        fillOpacity: 1,
+        strokeColor: '#fff', strokeWeight: 2
+      }
+    });
+    markers.push(marker);
+  });
+}
+
+// ──────────────────────────────
+//  タイムライン描画
+// ──────────────────────────────
+function renderTimeline(timeline) {
+  const tl = document.getElementById('timeline');
+  tl.innerHTML = `
+    <div class="tl-header">
+      タイムスケジュール
+      <button class="tl-copy" onclick="copyTimeline()">コピー</button>
+    </div>
+    <div class="tl-items" id="tl-items"></div>
+  `;
+  const items = document.getElementById('tl-items');
+  timeline.forEach((item, i) => {
+    const isLast = i === timeline.length - 1;
+    items.insertAdjacentHTML('beforeend', `
+      <div class="tl-row type-${item.type}">
+        <div class="tl-line">
+          <div class="tl-dot"></div>
+          ${!isLast ? '<div class="tl-connector"></div>' : ''}
+        </div>
+        <div class="tl-content">
+          <div class="tl-time">${item.time}</div>
+          <div class="tl-place">${item.place}</div>
+          <div class="tl-detail">${item.detail}</div>
+        </div>
+      </div>
+    `);
+  });
+}
+
+// ──────────────────────────────
+//  コピー
+// ──────────────────────────────
+window.copyTimeline = function() {
+  const tl = document.getElementById('tl-items');
+  if (!tl) return;
+  const rows = [...tl.querySelectorAll('.tl-row')].map(row => {
+    const t = row.querySelector('.tl-time')?.textContent || '';
+    const p = row.querySelector('.tl-place')?.textContent || '';
+    const d = row.querySelector('.tl-detail')?.textContent || '';
+    return `${t}  ${p}\n        ${d}`;
+  });
+  navigator.clipboard.writeText(rows.join('\n')).then(() => {
+    alert('タイムスケジュールをコピーしました');
+  });
+};
+
+// ──────────────────────────────
+//  メイン：ルート計算
+// ──────────────────────────────
+window.runCalc = async function() {
+  clearAlert();
+
+  const apiKey    = document.getElementById('api-key').value.trim();
+  const startLoc  = document.getElementById('start-loc').value.trim();
+  const startTime = document.getElementById('start-time').value;
+  const endTime   = document.getElementById('end-time').value;
+  const dests     = getDests();
+
+  // バリデーション
+  if (!apiKey)          { showAlert('APIキーを入力してください'); return; }
+  if (!startLoc)        { showAlert('出発・帰着地点を入力してください'); return; }
+  if (dests.length < 1) { showAlert('目的地を1つ以上入力してください'); return; }
+  if (timeToMin(startTime) >= timeToMin(endTime)) {
+    showAlert('終了時刻は開始時刻より後にしてください'); return;
+  }
+
+  // 合計滞在時間の簡易チェック
+  const totalStayMin = dests.reduce((s, d) => s + d.dur, 0);
+  const totalBufMin  = dests.length * (BUF_PRE + BUF_POST) + (BUF_PRE + BUF_POST);
+  const availMin     = timeToMin(endTime) - timeToMin(startTime);
+  if (totalStayMin + totalBufMin >= availMin) {
+    showAlert(
+      `目的地が多すぎる、または滞在時間が長すぎます。\n` +
+      `滞在合計: ${totalStayMin}分、バッファ合計: ${totalBufMin}分 → 合計${totalStayMin + totalBufMin}分\n` +
+      `利用可能時間: ${availMin}分`
+    );
+    return;
+  }
+
+  try {
+    setLoading(true, 'Google Maps を初期化中...');
+    await loadMapsScript(apiKey);
+
+    if (!map) {
+      initMap({ lat: 35.6812, lng: 139.7671 });
+    }
+
+    const { timeline, orderedDests } = await buildRoute(
+      startLoc, dests, startTime, endTime, apiKey
+    );
+
+    setLoading(true, 'ルートを地図に描画中...');
+    await drawRoute(startLoc, orderedDests, apiKey);
+
+    renderTimeline(timeline);
+    setLoading(false);
+    showAlert('ルートの計算が完了しました', 'success');
+
+  } catch (err) {
+    setLoading(false);
+    showAlert(err.message || '計算中にエラーが発生しました');
+    console.error(err);
+  }
+};
+</script>
+
+</body>
+</html>
